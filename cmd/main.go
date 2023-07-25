@@ -1,10 +1,11 @@
 package main
 
 import (
+	"github.com/anacondaf/petSocialAPI/src/api/host/domain"
+	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/logger"
+
+	api "github.com/anacondaf/petSocialAPI/src/api/host"
 	_ "github.com/go-sql-driver/mysql"
-	"go-echo/api"
-	"go-echo/api/domain"
-	"go-echo/api/infrastructure/logger"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
