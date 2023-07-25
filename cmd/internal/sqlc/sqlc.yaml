@@ -1,0 +1,7 @@
+version: 1
+packages:
+  - path: "../../../api/domain"
+    name: "domain"
+    engine: "mysql"
+    schema: "schema.sql"
+    queries: "query.sql"

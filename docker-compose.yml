@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-petsocial
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - "MYSQL_ROOT_PASSWORD=secret"
+      - "MYSQL_DATABASE=pet-social"
+    networks:
+      - node-network
+
+networks:
+  node-network:
+    driver: bridge
