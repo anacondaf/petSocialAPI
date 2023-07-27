@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   mysql:
@@ -10,6 +10,15 @@ services:
     environment:
       - "MYSQL_ROOT_PASSWORD=secret"
       - "MYSQL_DATABASE=pet-social"
+    networks:
+      - node-network
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    container_name: jenkins-petsocial
+    restart: on-failure
+    ports:
+      - "8080:8080"
     networks:
       - node-network
 
