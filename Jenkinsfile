@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     environment {
-        GREET = 'HELLO WORLD'
+        GREET_ENV = 'HELLO WORLD'
     }
 
     stages{
         stage("Build") {
             steps {
-                echo "Say ${GREET}"
+                echo "Say ${GREET_ENV}"
                 sh 'printenv'
             }
         }
