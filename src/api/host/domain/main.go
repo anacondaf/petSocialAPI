@@ -3,6 +3,7 @@ package domain
 import (
 	"database/sql"
 	"fmt"
+
 	"go.uber.org/zap"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -17,8 +18,6 @@ func RunDBMigration(db *sql.DB, MIGRATION_URL string) error {
 		return err
 	}
 
-	fmt.Println(driver.Version())
-
 	m, err := migrate.NewWithDatabaseInstance(
 		MIGRATION_URL,
 		"pet-social",
@@ -28,7 +27,11 @@ func RunDBMigration(db *sql.DB, MIGRATION_URL string) error {
 		return err
 	}
 
-	return m.Up()
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
 }
 
 func UseSqlc(logger *zap.Logger) *Queries {
@@ -41,7 +44,7 @@ func UseSqlc(logger *zap.Logger) *Queries {
 
 	logger.Info("Connect to mysql success")
 
-	err = RunDBMigration(db, "file://../api/migrations")
+	err = RunDBMigration(db, "file://src/api/host/migrations")
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Error when run db migration: %v", err))
 	}
