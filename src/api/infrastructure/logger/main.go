@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -13,7 +14,17 @@ func fileEncoder(encoderConfig *zapcore.EncoderConfig) (zapcore.Encoder, zapcore
 	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 
 	wd, _ := os.Getwd()
-	logFile, _ := os.OpenFile(filepath.Join(wd, "/test.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+
+	path := filepath.Join(wd, "/src/api/host/logs")
+
+	if utils.PathIsNotExist(path) {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	logFile, _ := os.OpenFile(filepath.Join(path, "/test.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 
 	encoder := zapcore.NewJSONEncoder(*encoderConfig)
 	writeSyncer := zapcore.AddSync(logFile)
