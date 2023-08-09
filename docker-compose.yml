@@ -27,13 +27,13 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.8.1
     environment:
       - cluster.name=${CLUSTER_NAME}
-      - node.name=es01
-      - discovery.type=single-node
+      - node.name=es1
+      - cluster.initial_master_nodes=es1
       - discovery.seed_hosts=es1
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.license.self_generated.type=trial
       - xpack.security.enabled=true
+      - xpack.security.enrollment.enabled=true
       # HTTPS
       - xpack.security.http.ssl.enabled=true
       - xpack.security.http.ssl.key=${CERTS_DIR}/es1/es1.key
@@ -51,7 +51,7 @@ services:
     ports:
       - "9200:9200"
     healthcheck:
-      test: curl --cacert ${CERTS_DIR}/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      test: curl --cacert elastic:Password http://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
       interval: 30s
       timeout: 10s
       retries: 5
@@ -64,22 +64,16 @@ services:
         condition: service_healthy
     image: docker.elastic.co/kibana/kibana:8.8.1
     container_name: kibana_petsocial
+    environment:
+      - ELASTICSEARCH_HOSTS=["https://es1:9200"]
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=F8gmlG5Pz2se3olQ5_aG
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/elastic/certs/ca/ca.crt
     volumes:
-      - "kibana_data:/usr/share/kibana/data"
-      - ./elastic/certs:${CERTS_DIR}
+      - kibana_data:/usr/share/kibana/data
+      - ./elastic/certs:/usr/share/kibana/config/elastic/certs
     ports:
       - "5601:5601"
-    environment:
-      ELASTICSEARCH_URL: http://es1:9200
-      ELASTICSEARCH_HOSTS: '["http://es1:9200"]'
-#      - "SERVER_NAME=kibana"
-#
-#      - "ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}"
-#      # Security
-#      - "SERVER_SSL_ENABLED=true"
-#      - "SERVER_SSL_CERTIFICATE=${CERTS_DIR}/ca/ca.crt"
-#      - "SERVER_SSL_KEY=${CERTS_DIR}/ca/ca.key"
-#      - "ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=${CERTS_DIR}/ca/ca.crt"
     healthcheck:
       test:
         [

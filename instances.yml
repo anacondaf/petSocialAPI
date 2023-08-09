@@ -5,6 +5,7 @@ instances:
       - localhost
     ip:
       - 127.0.0.1
+      - 0.0.0.0
 
   - name: es2
     dns:
@@ -12,3 +13,4 @@ instances:
       - localhost
     ip:
       - 127.0.0.1
+      - 0.0.0.0
