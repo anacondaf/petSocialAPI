@@ -2,9 +2,16 @@ package api
 
 import (
 	"context"
-	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/mediatR"
-	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/service"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/mediatR"
+	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/melody"
+	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/service"
+	"github.com/google/uuid"
+	mel "github.com/olahol/melody"
 
 	"github.com/anacondaf/petSocialAPI/src/api/host/controller"
 	"github.com/anacondaf/petSocialAPI/src/api/host/domain"
@@ -19,6 +26,10 @@ func apiVersioning(e *echo.Echo) *echo.Group {
 	return v1
 }
 
+type gopherInfo struct {
+	ID, X, Y string
+}
+
 func StartHttpServer(lc fx.Lifecycle, db *domain.Queries, logger *zap.Logger) *echo.Echo {
 	e := echo.New()
 
@@ -27,6 +38,65 @@ func StartHttpServer(lc fx.Lifecycle, db *domain.Queries, logger *zap.Logger) *e
 
 	v1 := apiVersioning(e)
 	AddController(v1, db)
+
+	// Serve websocket demo html application
+	wd, _ := os.Getwd()
+	e.File("/demo", filepath.Join(wd, "/static/index.html"))
+
+	// Handle websocket
+	var websocket = melody.NewWebsocket()
+
+	e.GET("/ws", func(c echo.Context) error {
+		return websocket.HandleRequest(c.Response(), c.Request())
+	})
+
+	websocket.HandleConnect(func(s *mel.Session) {
+		ss, _ := websocket.Sessions()
+
+		for _, o := range ss {
+			value, exists := o.Get("info")
+
+			if !exists {
+				continue
+			}
+
+			info := value.(*gopherInfo)
+
+			s.Write([]byte("set " + info.ID + " " + info.X + " " + info.Y))
+		}
+
+		id := uuid.NewString()
+		s.Set("info", &gopherInfo{id, "0", "0"})
+
+		s.Write([]byte("iam " + id))
+	})
+
+	websocket.HandleDisconnect(func(s *mel.Session) {
+		value, exists := s.Get("info")
+
+		if !exists {
+			return
+		}
+
+		info := value.(*gopherInfo)
+
+		websocket.BroadcastOthers([]byte("dis "+info.ID), s)
+	})
+
+	websocket.HandleMessage(func(s *mel.Session, msg []byte) {
+		p := strings.Split(string(msg), " ")
+		value, exists := s.Get("info")
+
+		if len(p) != 2 || !exists {
+			return
+		}
+
+		info := value.(*gopherInfo)
+		info.X = p[0]
+		info.Y = p[1]
+
+		websocket.BroadcastOthers([]byte("set "+info.ID+" "+info.X+" "+info.Y), s)
+	})
 
 	mediatR.RegisterHandler(db, logger)
 

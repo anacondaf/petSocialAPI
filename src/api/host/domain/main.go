@@ -2,6 +2,7 @@ package domain
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -12,14 +13,14 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func RunDBMigration(db *sql.DB, MIGRATION_URL string) error {
+func RunDBMigration(db *sql.DB, MigrationUrl string) error {
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
 		return err
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		MIGRATION_URL,
+		MigrationUrl,
 		"pet-social",
 		driver,
 	)
@@ -27,7 +28,7 @@ func RunDBMigration(db *sql.DB, MIGRATION_URL string) error {
 		return err
 	}
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 
