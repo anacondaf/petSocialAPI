@@ -67,7 +67,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=["https://es1:9200"]
       - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=F8gmlG5Pz2se3olQ5_aG
+      - ELASTICSEARCH_PASSWORD=G3TgJ9Ygp6E*Ur_6nhFR
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/elastic/certs/ca/ca.crt
     volumes:
       - kibana_data:/usr/share/kibana/data
@@ -86,6 +86,23 @@ services:
     networks:
       - node-network
 
+  metricbeat:
+    depends_on:
+      es1:
+        condition: service_healthy
+    build: .
+    container_name: metricbeat-petsocial
+    environment:
+      - ELASTICSEARCH_HOST=https://es1:9200
+      - KIBANA_HOST=http://kibana:5601
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=Password
+    volumes:
+      - metricbeat_data:/usr/share/metricbeat/data
+      - ./elastic/certs:/etc/elastic/certs
+    networks:
+      - node-network
+
 volumes:
   es_data_1:
     driver: local
@@ -93,10 +110,9 @@ volumes:
     driver: local
   kibana_data:
     driver: local
+  metricbeat_data:
+    driver: local
 
 networks:
-  default:
-    name: elastic
-    external: false
   node-network:
     driver: bridge
