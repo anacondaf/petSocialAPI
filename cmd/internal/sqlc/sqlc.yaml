@@ -1,6 +1,6 @@
 version: 1
 packages:
-  - path: "../../../api/domain"
+  - path: "../../../src/api/host/domain"
     name: "domain"
     engine: "mysql"
     schema: "schema.sql"
