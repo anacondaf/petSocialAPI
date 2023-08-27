@@ -2,10 +2,9 @@ package api
 
 import (
 	"context"
-	"net/http"
-
 	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/mediatR"
 	"github.com/anacondaf/petSocialAPI/src/api/infrastructure/service"
+	"net/http"
 
 	"github.com/anacondaf/petSocialAPI/src/api/host/controller"
 	"github.com/anacondaf/petSocialAPI/src/api/host/domain"
@@ -26,7 +25,6 @@ func StartHttpServer(lc fx.Lifecycle, db *domain.Queries, logger *zap.Logger) *e
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Register all routes
 	v1 := apiVersioning(e)
 	AddController(v1, db)
 

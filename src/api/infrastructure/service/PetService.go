@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"database/sql"
 	request "github.com/anacondaf/petSocialAPI/src/api/application/request/pet"
 	"github.com/anacondaf/petSocialAPI/src/api/host/domain"
 	"github.com/google/uuid"
@@ -17,13 +19,18 @@ func NewPetService(db *domain.Queries) *PetService {
 }
 
 func (p PetService) CreatePet(request *request.CreatePetRequest) (uuid.UUID, error) {
-	//pet := &domain.Pet{
-	//	Id:     uuid.New(),
-	//	Name:   request.Name,
-	//	Number: "",
-	//}
-	//
-	//return pet.Id, nil
+	id := uuid.New()
 
-	return uuid.New(), nil
+	_, err := p.db.CreatePetAndReturnId(context.Background(), domain.CreatePetAndReturnIdParams{
+		ID: id.String(),
+		Name: sql.NullString{
+			String: request.Name,
+			Valid:  true,
+		},
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return id, nil
 }
