@@ -26,32 +26,71 @@ services:
     container_name: es1-petsocial
     image: docker.elastic.co/elasticsearch/elasticsearch:8.8.1
     environment:
-      - cluster.name=${CLUSTER_NAME}
+      - cluster.name=elastic_search
       - node.name=es1
-      - cluster.initial_master_nodes=es1
-      - discovery.seed_hosts=es1
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - cluster.initial_master_nodes=es1,es2
+      - discovery.seed_hosts=es2
+      - ELASTIC_PASSWORD=Password
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.security.enabled=true
       - xpack.security.enrollment.enabled=true
       # HTTPS
       - xpack.security.http.ssl.enabled=true
-      - xpack.security.http.ssl.key=${CERTS_DIR}/es1/es1.key
-      - xpack.security.http.ssl.certificate=${CERTS_DIR}/es1/es1.crt
-      - xpack.security.http.ssl.certificate_authorities=${CERTS_DIR}/ca/ca.crt
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certificates/es1/es1.key
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certificates/es1/es1.crt
+      - xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certificates/ca/ca.crt
       # SSL
       - xpack.security.transport.ssl.enabled=true
-      - xpack.security.transport.ssl.key=${CERTS_DIR}/es1/es1.key
-      - xpack.security.transport.ssl.certificate=${CERTS_DIR}/es1/es1.crt
-      - xpack.security.transport.ssl.certificate_authorities=${CERTS_DIR}/ca/ca.crt
+      - xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certificates/es1/es1.key
+      - xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certificates/es1/es1.crt
+      - xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certificates/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
     volumes:
       - es_data_1:/usr/share/elastic_search/data
-      - ./elastic/certs:${CERTS_DIR}
+      - ./elastic/certs:/usr/share/elasticsearch/config/certificates
     ports:
       - "9200:9200"
     healthcheck:
       test: curl --cacert elastic:Password http://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - node-network
+
+  es2:
+    depends_on:
+      es1:
+        condition: service_started
+    container_name: es2-petsocial
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.1
+    environment:
+      - cluster.name=elastic_search
+      - node.name=es2
+      - cluster.initial_master_nodes=es1,es2
+      - discovery.seed_hosts=es1
+      - ELASTIC_PASSWORD=Password
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=true
+      - xpack.security.enrollment.enabled=true
+      # HTTPS
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certificates/es2/es2.key
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certificates/es2/es2.crt
+      - xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certificates/ca/ca.crt
+      # SSL
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certificates/es2/es2.key
+      - xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certificates/es2/es2.crt
+      - xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certificates/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+    volumes:
+      - es_data_2:/usr/share/elastic_search/data
+      - ./elastic/certs:/usr/share/elasticsearch/config/certificates
+    ports:
+      - "9201:9200"
+    healthcheck:
+      test: curl --cacert elastic:Password http://localhost:9201 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
       interval: 30s
       timeout: 10s
       retries: 5
@@ -65,9 +104,9 @@ services:
     image: docker.elastic.co/kibana/kibana:8.8.1
     container_name: kibana_petsocial
     environment:
-      - ELASTICSEARCH_HOSTS=["https://es1:9200"]
+      - ELASTICSEARCH_HOSTS=https://es1:9200
       - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=G3TgJ9Ygp6E*Ur_6nhFR
+      - ELASTICSEARCH_PASSWORD=1qNJu4XinRYExlt5LaNG
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/elastic/certs/ca/ca.crt
     volumes:
       - kibana_data:/usr/share/kibana/data
@@ -90,16 +129,32 @@ services:
     depends_on:
       es1:
         condition: service_healthy
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.Metricbeat
     container_name: metricbeat-petsocial
     environment:
-      - ELASTICSEARCH_HOST=https://es1:9200
+      - ELASTICSEARCH_HOST=["https://es1:9200","https://es2:9200"]
       - KIBANA_HOST=http://kibana:5601
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=Password
     volumes:
       - metricbeat_data:/usr/share/metricbeat/data
       - ./elastic/certs:/etc/elastic/certs
+    networks:
+      - node-network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq-petsocial
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - /var/lib/rabbitmq
     networks:
       - node-network
 

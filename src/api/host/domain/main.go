@@ -45,7 +45,7 @@ func UseSqlc(logger *zap.Logger) *Queries {
 
 	logger.Info("Connect to mysql success")
 
-	err = RunDBMigration(db, "file://src/api/host/migrations")
+	err = RunDBMigration(db, "file://../src/api/host/migrations")
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Error when run db migration: %v", err))
 	}
